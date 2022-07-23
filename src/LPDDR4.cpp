@@ -15,6 +15,7 @@ map<string, enum LPDDR4::Org> LPDDR4::org_map = {
     {"LPDDR4_4Gb_x16", LPDDR4::Org::LPDDR4_4Gb_x16},
     {"LPDDR4_6Gb_x16", LPDDR4::Org::LPDDR4_6Gb_x16},
     {"LPDDR4_8Gb_x16", LPDDR4::Org::LPDDR4_8Gb_x16},
+    {"LPDDR4_Hybrid_Bonding_Bank_128Mb", LPDDR4::Org::LPDDR4_Hybrid_Bonding_Bank_128Mb}
 };
 
 map<string, enum LPDDR4::Speed> LPDDR4::speed_map = {
@@ -57,25 +58,28 @@ void LPDDR4::init_speed()
     const static int RFCPB_TABLE[int(Org::MAX)][int(Speed::MAX)] = {
         {48,  72,  96},
         {72, 108, 144},
-        {72, 108, 144}
+        {72, 108, 144},
+        {48,  72,  96},
     };
 
     const static int RFCAB_TABLE[int(Org::MAX)][int(Speed::MAX)] = {
         {104, 156, 208},
         {144, 216, 288},
-        {144, 216, 288}
+        {144, 216, 288},
+        {104, 156, 208},
     };
 
     const static int REFI_TABLE[int(RefreshMode::MAX)][int(Speed::MAX)] = {
         {3124, 4685, 6247},
         {1563, 2344, 3125},
-        { 782, 1172, 1563}
+        { 782, 1172, 1563},
     };
 
     const static int XSR_TABLE[int(Org::MAX)][int(Speed::MAX)] = {
         {110, 165, 220},
         {150, 225, 300},
         {150, 225, 300},
+        {110, 165, 220},
     };
 
     int speed = 0, density = 0;
@@ -86,6 +90,7 @@ void LPDDR4::init_speed()
         default: assert(false);
     };
     switch (org_entry.size >> 10){
+        case 0: density = 0; break;
         case 2: density = 0; break;
         case 3: density = 1; break;
         case 4: density = 2; break;

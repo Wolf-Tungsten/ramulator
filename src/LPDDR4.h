@@ -143,6 +143,7 @@ public:
         LPDDR4_4Gb_x16,
         LPDDR4_6Gb_x16,
         LPDDR4_8Gb_x16,
+        LPDDR4_Hybrid_Bonding_Bank_128Mb,
         // LPDDR4_12Gb_x16, // tRFC TBD
         // LPDDR4_16Gb_x16, // tRFC TBD
         MAX
@@ -156,6 +157,7 @@ public:
         {2<<10, 16, {0, 0, 8, 1<<14, 1<<10}},
         {3<<10, 16, {0, 0, 8, 3<<13, 1<<10}},
         {4<<10, 16, {0, 0, 8, 1<<15, 1<<10}},
+        {128, 16, {0, 0, 1, 8192, 1<<10}},
     }, org_entry;
 
     void set_channel_number(int channel);
@@ -179,8 +181,8 @@ public:
         MAX
     } refresh_mode = RefreshMode::Refresh_1X;
 
-    int prefetch_size = 16; // 16n prefetch DDR
-    int channel_width = 32;
+    int prefetch_size = 8; // 16n prefetch DDR
+    int channel_width = 16;
 
     struct SpeedEntry {
         int rate;

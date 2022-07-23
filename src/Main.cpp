@@ -66,9 +66,73 @@ void run_dramtrace(const Config& configs, Memory<T, Controller>& memory, const c
         }
         else {
             memory.set_high_writeq_watermark(0.0f); // make sure that all write requests in the
-                                                    // write queue are drained
+            // write queue are drained
         }
 
+        memory.tick();
+        clks ++;
+        Stats::curTick++; // memory clock, global, for Statistics
+    }
+    // This a workaround for statistics set only initially lost in the end
+    memory.finish();
+    Stats::statlist.printall();
+
+}
+
+template<typename T>
+void run_interactive(const Config& configs, Memory<T, Controller>& memory) {
+
+    /* run simulation */
+    bool stall = false;
+    int reads = 0, writes = 0, clks = 0;
+    long addr = 0, request_id = 0;
+    string op;
+    Request::Type type = Request::Type::READ;
+    map<int, int> latencies;
+    auto read_complete = [&latencies](Request& r){
+        latencies[r.depart - r.arrive]++;
+        std::cout << "READ_RESPONSE " << r.request_id << std::endl;
+    };
+
+    Request req(addr, type, read_complete);
+
+    while(true){
+        std::cin >> op;
+        if(op == "END"){
+            break;
+        } else if (op == "TICK") {
+            memory.tick();
+            clks++;
+            std::cout << "DONE " << clks << std::endl;
+            Stats::curTick++; // memory clock, global, for Statistics
+        } else if (op == "READ") {
+            std::cin >> request_id >> addr;
+            req.type = Request::Type::READ;
+            req.addr = addr;
+            req.request_id = request_id;
+            stall = !memory.send(req);
+            if(stall){
+                std::cout << "STALL" << std::endl;
+            } else {
+                std::cout << "ACCEPT" << std::endl;
+                reads++;
+            }
+        } else if (op == "WRITE") {
+            std::cin >> request_id >> addr;
+            req.type = Request::Type::WRITE;
+            req.addr = addr;
+            req.request_id = request_id;
+            stall = !memory.send(req);
+            if(stall){
+                std::cout << "STALL" << std::endl;
+            } else {
+                std::cout << "ACCEPT" << std::endl;
+                writes++;
+            }
+        }
+    }
+    memory.set_high_writeq_watermark(0.0f);
+    while(memory.pending_requests()){
         memory.tick();
         clks ++;
         Stats::curTick++; // memory clock, global, for Statistics
@@ -172,6 +236,8 @@ void start_run(const Config& configs, T* spec, const vector<const char*>& files)
     run_cputrace(configs, memory, files);
   } else if (configs["trace_type"] == "DRAM") {
     run_dramtrace(configs, memory, files[0]);
+  } else if (configs["trace_type"] == "INTERACTIVE") {
+      run_interactive(configs, memory);
   }
 }
 
@@ -190,16 +256,20 @@ int main(int argc, const char *argv[])
 
     const char *trace_type = strstr(argv[2], "=");
     trace_type++;
+    int trace_start = 3;
     if (strcmp(trace_type, "cpu") == 0) {
       configs.add("trace_type", "CPU");
     } else if (strcmp(trace_type, "dram") == 0) {
       configs.add("trace_type", "DRAM");
+    } else if (strcmp(trace_type, "interactive") == 0) {
+        configs.add("trace_type", "INTERACTIVE");
+        trace_start = 2;
     } else {
-      printf("invalid trace type: %s\n", trace_type);
+        printf("invalid trace type: %s\n", trace_type);
       assert(false);
     }
 
-    int trace_start = 3;
+
     string stats_out;
     if (strcmp(argv[trace_start], "--stats") == 0) {
       Stats::statlist.output(argv[trace_start+1]);
